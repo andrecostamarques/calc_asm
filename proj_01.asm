@@ -59,8 +59,8 @@ and bl,0fh ;transforma bl em numeral
 cmp ch,"+" ;soma deu tudo certo
 jz soma 
 
-cmp ch,"-"
-jz subtracao ;alguma coisa ta dando errado na subtracao 
+cmp ch,"-"  ;sub deu tudo certo
+jz subtracao 
 
 soma: 
 add bh,bl
