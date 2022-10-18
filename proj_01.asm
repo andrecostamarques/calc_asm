@@ -70,18 +70,14 @@ jmp print ;vai enviar o valor para printar normalmente
 
 
 subtracao: 
-cmp bh,bl ;vai comparar se bh é maior, se for ele vai continuar fazendo sub para o resultado POSITIVO 
-jl sub_neg_print ;se o resultado for negativo ele vai fazer um jmp 
-
 sub bh,bl
 mov cl,bh
+js sub_neg_print
 mov bl,"+"
 jmp print ;se for positivo vai printar normalmente
 
 sub_neg_print: 
-xchg bh,bl ;o bh vai receber o maior valor
-sub bh,bl ;bh vai ser o modulo do resultado, ou seja, o valor vai ser positivo 
-mov cl,bh
+neg cl 
 mov bl,"-"  ;transforma o registrador que salva o sinal em negativo para que printe como um numero negativo
 jmp print
 
