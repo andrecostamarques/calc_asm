@@ -126,7 +126,7 @@ menos proc
 
 menos endp
 
-mult proc           // ta funcionando mas tem 2 problemas: printar numeros com mais de 1 casa decimal e receber input com mais de uma casa decimal
+mult proc           ; ta funcionando mas tem 2 problemas: printar numeros com mais de 1 casa decimal e receber input com mais de uma casa decimal
 
     mov cl,0 ;inicia o loop zerado
     mov al,bh
