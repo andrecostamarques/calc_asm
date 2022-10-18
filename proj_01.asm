@@ -22,18 +22,17 @@ int 21h
 mov ah,01h
 int 21h
 mov ch,al ;ch vai ser no codigo inteiro somente para definir a operacao
+
 cmp ch,"+"
 jz cont
-jnz erro
 cmp ch,"-"
-jz cont
-jnz erro
+jz cont       ;verifica os inputs se sao possiveis, se estao erradas ele da erro e fecha o programa
 cmp ch,"/"
 jz cont
-jnz erro
 cmp ch,"*"
 jz cont
-jnz erro
+
+jnz erro ;caso seja diferente dos inputs escolhidos ele vai pular pro erro e fecha o programa
 
 
 cont:
@@ -44,14 +43,18 @@ int 21h
 mov ah,01h
 int 21h
 mov bh,al ;o primeiro numero vai sempre ficar salvo em bh
+and bh,0fh ;transforma bh em numeral
 
 mov ah,09h
-lea dx,num2 ;printa a frase pedindo o primeiro numero
+lea dx,num2 ;printa a frase pedindo o segundo numero
 int 21h
 
 mov ah,01h
 int 21h
 mov bl,al ;o segundo numero vai sempre ficar salvo em bl
+and bl,0fh ;transforma bl em numeral
+
+
 
 cmp ch,"+" ;soma deu tudo certo
 jz soma 
@@ -62,24 +65,43 @@ jz subtracao ;alguma coisa ta dando errado na subtracao
 soma: 
 add bh,bl
 mov cl,bh ;o cl vai sempre ser o resultado das operacoes
-sub cl,30h
-jmp print
+mov bl,"+" ;transformo bl no sinal para ser printado
+jmp print ;vai enviar o valor para printar normalmente
 
 
 subtracao: 
+cmp bh,bl ;vai comparar se bh é maior, se for ele vai continuar fazendo sub para o resultado POSITIVO 
+jl sub_neg_print ;se o resultado for negativo ele vai fazer um jmp 
+
 sub bh,bl
 mov cl,bh
-sub cl,30h
+mov bl,"+"
+jmp print ;se for positivo vai printar normalmente
+
+sub_neg_print: 
+xchg bh,bl ;o bh vai receber o maior valor
+sub bh,bl ;bh vai ser o modulo do resultado, ou seja, o valor vai ser positivo 
+mov cl,bh
+mov bl,"-"  ;transforma o registrador que salva o sinal em negativo para que printe como um numero negativo
 jmp print
+
 
 
 print:
 mov ah,09h
-lea dx,result ;printa a frase pedindo o operador
+lea dx,result ;printa a frase falando o resultado 
 int 21h
-mov ah,02h
+
+mov ah,02h ;printo o sinal do numero
+mov dl,bl ;printo o sinal do numero
+int 21h
+
+mov ah,02h ;printa o numero
+or cl,30h ;transforma o numeral em char
 mov dl,cl ;printa o resultado
 int 21h
+jmp exit
+;futuramente adicionar maneiras de salvar o resultado das operacoes e voltar pro inicio para poder fazer outras contas
 
 exit:
 mov ah,4ch ;finaliza o codigo
@@ -87,10 +109,9 @@ int 21h
 
 erro:
 mov ah,09h
-lea dx,error ;printa a frase pedindo o operador
+lea dx,error ;printa a frase avisando o erro 
 int 21h
-mov ah,4ch ;finaliza o codigo
-int 21h
+jmp exit
 
 
 main endp 
