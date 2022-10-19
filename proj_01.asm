@@ -1,3 +1,4 @@
+TITLE André Marques - 22001640 // Plínio Zanchetta - 22023003
 .model small
 .data 
 
@@ -75,20 +76,7 @@ call divi   ;chama o procedimenot de divisao
 not_divi:
 
 print:
-mov ah,09h
-lea dx,result ;printa a frase falando o resultado 
-int 21h
-
-mov ah,02h ;printo o sinal do numero
-mov dl,bl ;printo o sinal do numero
-int 21h
-
-mov ah,02h ;printa o modulo do numero
-or cl,30h ;transforma o numeral em char
-mov dl,cl ;printa o resultado
-int 21h
-jmp exit
-;futuramente adicionar maneiras de salvar o resultado das operacoes e voltar pro inicio para poder fazer outras contas
+call printar ;chama o procedimento de print 
 
 exit:
 mov ah,4ch ;finaliza o codigo
@@ -139,7 +127,7 @@ mult proc           ; ta funcionando mas tem 2 problemas: printar numeros com ma
 
     mov cl,bh   ;movemos o produto da multiplicao para cl ser printado
     mov bl,"+" ;se der pra inserir numeros NEGATIVOS <<< isso tem que mudar, colocar mesmo esquema de sub 
-    jmp print 
+    jmp print_mult 
 
 mult endp
 
@@ -148,5 +136,37 @@ divi proc
         ;bh / bl
         ;loop de bh sub bl enquanto bh for maior ou igual a 0 e toda vez no loop faz inc do resultado 
 divi endp
+
+printar proc
+
+    xor ch,ch ;comecamos a divisao do resultado para que possamos imprimir 2 valores
+    mov ax,cx
+    print_mult:
+    mov ch,10
+    div ch ;al = cosciente ah = resto
+    
+    mov cl,al   ;cl se torna cosciente
+    mov ch,ah   ;ch se torna resto
+
+    mov ah,09h
+    lea dx,result ;printa a frase falando o resultado 
+    int 21h
+
+    mov ah,02h ;printo o sinal do numero
+    mov dl,bl ;printo o sinal do numero
+    int 21h
+
+    mov ah,02h ;printa o modulo do cosciente do numero
+    or cl,30h ;transforma o numeral em char
+    mov dl,cl ;printa o resultado
+    int 21h
+
+    mov ah,02h ;printa o modulo do resto do numero
+    or ch,30h ;transforma o numeral em char
+    mov dl,ch ;printa o resultado
+    int 21h
+    
+    jmp exit
+printar endp
 
 end main 
