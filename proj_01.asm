@@ -1,26 +1,33 @@
 TITLE André Marques - 22001640 // Plínio Zanchetta - 22023003
 .model small
+.stack 100h
 .data 
 
-selec_op db 10,"Selecione sua operacao: + - / *:$"
+select_op db 10,"Selecione sua operacao: + - / *:$"
 num1 db 10,"Defina o primeiro numero da operacao:$"
 num2 db 10,"Defina o segundo numero da operacao:$"
 result db 10,"Resultado:$"
-error db 10,"Algo deu errado, tente novamente.$"
-
+error db 10,"Algo deu errado, tente novamente:$"
+error_num db 10,"Algo deu errado, tente novamente o numero:$"
 
 .code
+
+print_msg macro var1
+    mov ah,09h
+    lea dx,var1
+    int 21h
+    endm
+
 main proc 
 
 MOV AX,@DATA           ;inicializa a data, setando ela para o registrador AX
 MOV DS,AX              ;seta a data para o registrador DS
 
 start: 
-mov ah,09h
-lea dx,selec_op ;printa a frase pedindo o operador
-int 21h
 
-mov ah,01h
+print_msg select_op
+
+mov ah,01h ;pegando input do operador
 int 21h
 mov ch,al ;ch vai ser no codigo inteiro somente para definir a operacao
 
@@ -36,56 +43,51 @@ mov ch,al ;ch vai ser no codigo inteiro somente para definir a operacao
 
 
 cont:
-mov ah,09h
-lea dx,num1 ;printa a frase pedindo o primeiro numero
-int 21h
 
-mov ah,01h
-int 21h
-mov bh,al ;o primeiro numero vai sempre ficar salvo em bh
-and bh,0fh ;transforma bh em numeral
+print_msg num1
 
-mov ah,09h
-lea dx,num2 ;printa a frase pedindo o segundo numero
-int 21h
+call pegar_input ;chama a funcao de input
+mov bh,al ;move al para bh
 
-mov ah,01h
-int 21h
+print_msg num2
+
+call pegar_input
 mov bl,al ;o segundo numero vai sempre ficar salvo em bl
-and bl,0fh ;transforma bl em numeral
-
 
 cmp ch,"+" ;soma deu tudo certo
 jnz not_soma
 call soma   ;chama o procedimento de soma 
+jmp print
 not_soma:
 
 cmp ch,"-"  ;sub deu tudo certo
 jnz not_menos
 call menos  ;chama o procedimento de subtracao
+jmp print
 not_menos:
 
 cmp ch,"*" ;introducao a multiplicacao
 jnz not_mult
 call mult   ;chama o procedimento de multiplicacao
+jmp print
 not_mult: ;como se fosse um switch case, vai testando todos até que encontra o que ele quis
 
 cmp ch,"/"
 jnz not_divi
 call divi   ;chama o procedimenot de divisao
+jmp print
 not_divi:
 
 print:
 call printar ;chama o procedimento de print 
+jmp exit
 
 exit:
 mov ah,4ch ;finaliza o codigo
 int 21h
 
 erro:
-mov ah,09h
-lea dx,error ;printa a frase avisando o erro 
-int 21h
+print_msg error
 jmp start
 
 main endp 
@@ -95,8 +97,8 @@ soma proc
     add bh,bl
     mov cl,bh ;o cl vai sempre ser o resultado das operacoes
     mov bl,"+" ;transformo bl no sinal para ser printado
-    jmp print ;vai enviar o valor para printar normalmente
-
+    
+    ret
 soma endp
 
 menos proc
@@ -110,8 +112,8 @@ menos proc
     sub_neg_print: 
     neg cl 
     mov bl,"-"  ;transforma o registrador que salva o sinal em negativo para que printe como um numero negativo
-    jmp print
-
+    
+    ret
 menos endp
 
 mult proc ; ta funcionando mas tem 2 problemas: printar numeros com mais de 1 casa decimal e receber input com mais de uma casa decimal
@@ -141,14 +143,16 @@ mult proc ; ta funcionando mas tem 2 problemas: printar numeros com mais de 1 ca
     jnz restart
     mov cl,ch
     mov bl,"+"
-    jmp print
-
+    
+    ret
 mult endp
 
 divi proc
         ;colocar as funcoes de divisao 
         ;bh / bl
         ;loop de bh sub bl enquanto bh for maior ou igual a 0 e toda vez no loop faz inc do resultado 
+
+    ret
 divi endp
 
 printar proc
@@ -156,14 +160,12 @@ printar proc
     xor ch,ch ;comecamos a divisao do resultado para que possamos imprimir 2 valores
     mov ax,cx
     mov ch,10
-    div ch ;al = cosciente ah = resto
+    div ch ;al = quociente ah = resto
     
     mov cl,al   ;cl se torna cosciente
     mov ch,ah   ;ch se torna resto
 
-    mov ah,09h
-    lea dx,result ;printa a frase falando o resultado 
-    int 21h
+    print_msg result
 
     mov ah,02h ;printo o sinal do numero
     mov dl,bl ;printo o sinal do numero
@@ -179,7 +181,30 @@ printar proc
     mov dl,ch ;printa o resultado
     int 21h
     
-    jmp exit
+    ret
 printar endp
+
+pegar_input proc
+
+start_numero:
+mov ah,01h  ;mando a funcao de inputs
+int 21h
+
+;============================= validacao de input ====================== 
+
+cmp al,30h  ;comparo o resultado com 0,se al ele é mandado pra error 
+jl erro_numero  ;da jmp erro_numero
+cmp al,39h  ;comparo o resultado com 9, se ele for maior é mandado pra error
+jg erro_numero
+
+and al,0fh  ;transformo em decimal
+
+RET 
+
+erro_numero:
+print_msg error_num
+jmp start_numero    ;reinicia 
+
+pegar_input endp 
 
 end main 
