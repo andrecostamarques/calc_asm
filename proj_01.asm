@@ -116,12 +116,13 @@ menos endp
 
 mult proc ; ta funcionando mas tem 2 problemas: printar numeros com mais de 1 casa decimal e receber input com mais de uma casa decimal
 
-    mov ch,bh  ;mando o valor de bh(input multiplicando=const) para multiplicando = variavel
+    ;BH é o multiplicando que será modificado e shiftado para que possa ser adicionado em ch, que foi zerado
+    mov ch,0 ;ch foi zerado para que ele possa servir de somatória dos resultados 
     mov cl,bl  ;manda o valor de bl(input multiplicador=const) para multiplicador = variavel
     mov bl,0    ;zero o contador
     jmp primeira    ;a primeira vez que o codigo rodar ele vai pular direto para que o multiplicano nao da shift para esquerda
     restart:    ;o loop recomeca
-    shl ch,1    ;shift de multiplicando para esquerda por 1 bit
+    shl bh,1    ;shift de multiplicando para esquerda por 1 bit
     inc bl ;transofrma bl em contador para loop
     primeira:   ;pula pra primeira vez
     ror cl,1 ;rotate de multiplicador para direita com o intuito de saber o valor de carry
@@ -129,14 +130,14 @@ mult proc ; ta funcionando mas tem 2 problemas: printar numeros com mais de 1 ca
     jc carry1
     carry1:
     add ch,bh ;q sofreu shift pra esquerda toda vez q o loop roda <<<<<<<<<<<<< testar com ADD
-    cmp bl,4 ;compara contador com 4 para saber se ele teria que reiniciar o loop ou printar
+    cmp bl,3;compara contador com 4 para saber se ele teria que reiniciar o loop ou printar
     jnz restart ;se for diferente de 4, o loop vai recomecar e o contador vai ser adicionado
     mov cl,ch ;mandando o valor de ch completo para cl ser printado
     mov bl,"+"
     jmp print   
     carry0:
-    add ch,00h  ;no caso de carry0 a soma vai ser com 0 por conta de ser zerado
-    cmp bl,4  ;caso contador seja 4 ele vai printar direto
+    or ch,00h  ;no caso de carry0 a soma vai ser com 0 por conta de ser zerado
+    cmp bl,3  ;caso contador seja 4 ele vai printar direto
     jnz restart
     mov cl,ch
     mov bl,"+"
