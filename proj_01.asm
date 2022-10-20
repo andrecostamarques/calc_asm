@@ -179,7 +179,7 @@ printar proc
     mov dl,ch ;printa o resultado
     int 21h
     
-    jmp start
+    jmp exit
 printar endp
 
 end main 
