@@ -127,71 +127,40 @@ menos endp
 
 mult proc ;funcionando com os valores positivos e negativos na multiplicacao >> sinal e magnitude e nao complemento de 2
 
-    ;======== verifica o sinal da multiplicacao =========
+;========= vai verificar a sinalizacao da multiplicacao =====
 
-    mov dl,0    ;zera o contador dl
-    
-    and bh,bh ;verifica as flags relacionadas a bh
-    js neg_bh   ;da o jmp se bh for negativo
-    jns pos_bh  ;da jmp se bh for positivo 
-    neg_bh:
-    inc dl  ;aumenta o contador dl
-    neg bh ;pega o modulo de bh
+call sinalizacao
 
-    pos_bh: ;se bh for positivo ele pula diretamente pra ca
-    and bl,bl   ;verifica as flags relacionadas a bl
-    js neg_bl   ;pula se bl for negativo
-    jns pos_bl  ;sai da parte do sinal se for positivo
-    neg_bl:
-    inc dl  ;aumenta o dl
-    neg bl  ;pega o modulo de bl
-
-    pos_bl:
 ;========== algoritmo da multiplicacao ===========
 
-    ;BH é o multiplicando que será modificado e shiftado para que possa ser adicionado em ch, que foi zerado
-    mov ch,0 ;ch foi zerado para que ele possa servir de somatória dos resultados 
-    mov cl,bl  ;manda o valor de bl(input multiplicador=const) para multiplicador = variavel
-    mov bl,0    ;zero o contador
-    jmp primeira    ;a primeira vez que o codigo rodar ele vai pular direto para que o multiplicano nao da shift para esquerda
-    restart:    ;o loop recomeca
-    shl bh,1    ;shift de multiplicando para esquerda por 1 bit
-    inc bl ;transofrma bl em contador para loop
-    primeira:   ;pula pra primeira vez
-    ror cl,1 ;rotate de multiplicador para direita com o intuito de saber o valor de carry
-    jnc carry0
-    jc carry1
-    carry1:
-    add ch,bh ;q sofreu shift pra esquerda toda vez q o loop roda <<<<<<<<<<<<< testar com ADD
-    cmp bl,3;compara contador com 4 para saber se ele teria que reiniciar o loop ou printar
-    jnz restart ;se for diferente de 4, o loop vai recomecar e o contador vai ser adicionado
-    jmp end_mult
-  
-    carry0:
-    or ch,00h  ;no caso de carry0 a soma vai ser com 0 por conta de ser zerado
-    cmp bl,3  ;caso contador seja 4 ele vai printar direto
-    jnz restart
+;BH é o multiplicando que será modificado e shiftado para que possa ser adicionado em ch, que foi zerado
+mov ch,0 ;ch foi zerado para que ele possa servir de somatória dos resultados 
+mov cl,bl  ;manda o valor de bl(input multiplicador=const) para multiplicador = variavel
+mov bl,0    ;zero o contador
+jmp primeira    ;a primeira vez que o codigo rodar ele vai pular direto para que o multiplicano nao da shift para esquerda
+restart:    ;o loop recomeca
+shl bh,1    ;shift de multiplicando para esquerda por 1 bit
+inc bl ;transofrma bl em contador para loop
+primeira:   ;pula pra primeira vez
+ror cl,1 ;rotate de multiplicador para direita com o intuito de saber o valor de carry
+jnc carry0
+jc carry1
+carry1:
+add ch,bh ;q sofreu shift pra esquerda toda vez q o loop roda <<<<<<<<<<<<< testar com ADD
+cmp bl,3;compara contador com 4 para saber se ele teria que reiniciar o loop ou printar
+jnz restart ;se for diferente de 4, o loop vai recomecar e o contador vai ser adicionado
+jmp end_mult
 
-    end_mult:
-    mov cl,ch   ;mandando valor de ch para cl
-    cmp dl,0    ;compara o contador dl com 0, ou seja, se ele for 2 numeros postiivos
-    je ch_pos   ;printa o sinal positivo
-    cmp dl,2    ;compara o dl com 2, ou seja, se forem 2 valores negativos, 
-    je ch_pos   ;printa o sinal positivo
-    cmp dl,1    ;compara o dl com 1, ou seja, se for 1 valor negativos 
-    je ch_neg   ;printa o sinal negativo
-    jne er_ult    ;da erro final caso algo de errado
+carry0:
+or ch,00h  ;no caso de carry0 a soma vai ser com 0 por conta de ser zerado
+cmp bl,3  ;caso contador seja 4 ele vai printar direto
+jnz restart
 
-    er_ult:
-    print_msg erro_ult
-    jmp exit
+end_mult:
+mov cl,ch   ;mandando valor de ch para cl
+mov bl,dh   ;mandando o valor de dh para bl, o dh é onde fica salvo o sinal no proc de sinalizacao 
+ret
 
-    ch_pos:
-    mov bl,"+"  ;move o sinal positivo para o bl que será printado
-    ret
-    ch_neg:
-    mov bl,"-"  ;move o sinal negativo que sera printado de bl
-    ret
     
 mult endp
 
@@ -268,5 +237,50 @@ print_msg error_num
 jmp start_numero    ;reinicia 
 
 pegar_input endp 
+
+sinalizacao proc    ;arruma a sinalizacao para procedimentos que nao possam ser feitos em complemento de 2 (mult e div)
+
+    ;======== verifica o sinal da multiplicacao =========
+
+    mov dl,0    ;zera o contador dl
+    
+    and bh,bh ;verifica as flags relacionadas a bh
+    js neg_bh   ;da o jmp se bh for negativo
+    jns pos_bh  ;da jmp se bh for positivo 
+    neg_bh:
+    inc dl  ;aumenta o contador dl
+    neg bh ;pega o modulo de bh
+
+    pos_bh: ;se bh for positivo ele pula diretamente pra ca
+    and bl,bl   ;verifica as flags relacionadas a bl
+    js neg_bl   ;pula se bl for negativo
+    jns pos_bl  ;sai da parte do sinal se for positivo
+    neg_bl:
+    inc dl  ;aumenta o dl
+    neg bl  ;pega o modulo de bl
+
+    pos_bl:
+
+    cmp dl,0    ;compara o contador dl com 0, ou seja, se ele for 2 numeros postivos
+    je ch_pos   ;printa o sinal positivo
+    cmp dl,2    ;compara o dl com 2, ou seja, se forem 2 valores negativos, 
+    je ch_pos   ;printa o sinal positivo
+    cmp dl,1    ;compara o dl com 1, ou seja, se for 1 valor negativos 
+    je ch_neg   ;printa o sinal negativo
+    jne er_ult    ;da erro final caso algo de errado
+
+    er_ult:
+    print_msg erro_ult  ;printa sinalizacao de erro
+    jmp exit
+
+    ch_pos:
+    mov dh,"+"  ;move o sinal positivo para o dh que será printado
+    ret ;retorna pro procedimento que esta sendo chamado
+
+    ch_neg:
+    mov dh,"-"  ;move o sinal negativo que sera printado de dh
+    ret ;retorna pro procedimento que esta sendo schamado
+
+sinalizacao endp
 
 end main 
