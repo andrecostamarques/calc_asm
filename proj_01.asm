@@ -9,7 +9,6 @@ num2 db 10,"Defina o segundo numero da operacao:$"
 result db 10,"Resultado:$"
 error db 10,"Algo deu errado, tente novamente:$"
 error_num db 10,"Algo deu errado, tente novamente o numero:$"
-erro_ult db 10,"Algo deu errado, finalize o programa!$"
 
 .code
 
@@ -267,11 +266,7 @@ sinalizacao proc    ;arruma a sinalizacao para procedimentos que nao possam ser 
     je ch_pos   ;printa o sinal positivo
     cmp dl,1    ;compara o dl com 1, ou seja, se for 1 valor negativos 
     je ch_neg   ;printa o sinal negativo
-    jne er_ult    ;da erro final caso algo de errado
-
-    er_ult:
-    print_msg erro_ult  ;printa sinalizacao de erro
-    jmp exit
+    jmp erro
 
     ch_pos:
     mov dh,"+"  ;move o sinal positivo para o dh que será printado
