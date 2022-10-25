@@ -4,12 +4,12 @@ TITLE André Marques - 22001640 // Plínio Zanchetta - 22023003
 .data 
 
 select_op db 10,"Selecione sua operacao: + - / *:$"
-error_sinal db 10,"A sinalização pode ser feita somente com (-) !!:"
 num1 db 10,"Defina o primeiro numero da operacao:$"
 num2 db 10,"Defina o segundo numero da operacao:$"
 result db 10,"Resultado:$"
 error db 10,"Algo deu errado, tente novamente:$"
 error_num db 10,"Algo deu errado, tente novamente o numero:$"
+erro_ult db 10,"Algo deu errado, finalize o programa!$"
 
 .code
 
@@ -94,7 +94,7 @@ jmp start
 
 main endp 
 
-soma proc
+soma proc   ;ja ta funcionando o menos e o mais
 
     add bh,bl
     mov cl,bh ;o cl vai sempre ser o resultado das operacoes
@@ -110,7 +110,7 @@ soma proc
     ret
 soma endp
 
-menos proc
+menos proc  ;ja ta funcionando o menos e o mais
 
     sub bh,bl ;faz o sub 
     mov cl,bh ;movo o resultado para CL << registrador padrao de respostas
@@ -125,7 +125,29 @@ menos proc
     ret
 menos endp
 
-mult proc ; ta funcionando mas tem 2 problemas: printar numeros com mais de 1 casa decimal e receber input com mais de uma casa decimal
+mult proc ;funcionando com os valores positivos e negativos na multiplicacao >> sinal e magnitude e nao complemento de 2
+
+    ;======== verifica o sinal da multiplicacao =========
+
+    mov dl,0    ;zera o contador dl
+    
+    and bh,bh ;verifica as flags relacionadas a bh
+    js neg_bh   ;da o jmp se bh for negativo
+    jns pos_bh  ;da jmp se bh for positivo 
+    neg_bh:
+    inc dl  ;aumenta o contador dl
+    neg bh ;pega o modulo de bh
+
+    pos_bh: ;se bh for positivo ele pula diretamente pra ca
+    and bl,bl   ;verifica as flags relacionadas a bl
+    js neg_bl   ;pula se bl for negativo
+    jns pos_bl  ;sai da parte do sinal se for positivo
+    neg_bl:
+    inc dl  ;aumenta o dl
+    neg bl  ;pega o modulo de bl
+
+    pos_bl:
+;========== algoritmo da multiplicacao ===========
 
     ;BH é o multiplicando que será modificado e shiftado para que possa ser adicionado em ch, que foi zerado
     mov ch,0 ;ch foi zerado para que ele possa servir de somatória dos resultados 
@@ -143,17 +165,34 @@ mult proc ; ta funcionando mas tem 2 problemas: printar numeros com mais de 1 ca
     add ch,bh ;q sofreu shift pra esquerda toda vez q o loop roda <<<<<<<<<<<<< testar com ADD
     cmp bl,3;compara contador com 4 para saber se ele teria que reiniciar o loop ou printar
     jnz restart ;se for diferente de 4, o loop vai recomecar e o contador vai ser adicionado
-    mov cl,ch ;mandando o valor de ch completo para cl ser printado
-    mov bl,"+"
-    jmp print   
+    jmp end_mult
+  
     carry0:
     or ch,00h  ;no caso de carry0 a soma vai ser com 0 por conta de ser zerado
     cmp bl,3  ;caso contador seja 4 ele vai printar direto
     jnz restart
-    mov cl,ch
-    mov bl,"+"
-    
+
+    end_mult:
+    mov cl,ch   ;mandando valor de ch para cl
+    cmp dl,0    ;compara o contador dl com 0, ou seja, se ele for 2 numeros postiivos
+    je ch_pos   ;printa o sinal positivo
+    cmp dl,2    ;compara o dl com 2, ou seja, se forem 2 valores negativos, 
+    je ch_pos   ;printa o sinal positivo
+    cmp dl,1    ;compara o dl com 1, ou seja, se for 1 valor negativos 
+    je ch_neg   ;printa o sinal negativo
+    jne er_ult    ;da erro final caso algo de errado
+
+    er_ult:
+    print_msg erro_ult
+    jmp exit
+
+    ch_pos:
+    mov bl,"+"  ;move o sinal positivo para o bl que será printado
     ret
+    ch_neg:
+    mov bl,"-"  ;move o sinal negativo que sera printado de bl
+    ret
+    
 mult endp
 
 divi proc
@@ -193,7 +232,8 @@ printar proc
     ret
 printar endp
 
-pegar_input proc
+pegar_input proc ;com possibilidade de pegar inputs negativos
+
 xor bl,bl   ;zera o valor de bl para que nao tenha nenhuma interferencia externa
 ;============================== validacao de input  ========================
 start_numero:
