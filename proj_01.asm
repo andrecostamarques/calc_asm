@@ -101,6 +101,7 @@ soma proc
 
     js negsoma  ;caso o resultado seja negativo ele vai pular para o negsoma:
     mov bl,"+" ;transformo bl no sinal para ser printado
+    ret
 
     negsoma:
     neg cl
@@ -193,6 +194,7 @@ printar proc
 printar endp
 
 pegar_input proc
+xor bl,bl   ;zera o valor de bl para que nao tenha nenhuma interferencia externa
 ;============================== validacao de input  ========================
 start_numero:
 mov ah,01h  ;manda a funcao de inputs
