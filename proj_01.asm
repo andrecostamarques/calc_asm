@@ -4,6 +4,7 @@ TITLE André Marques - 22001640 // Plínio Zanchetta - 22023003
 .data 
 
 select_op db 10,"Selecione sua operacao: + - / *:$"
+error_sinal db 10,"A sinalização pode ser feita somente com (-) !!:"
 num1 db 10,"Defina o primeiro numero da operacao:$"
 num2 db 10,"Defina o segundo numero da operacao:$"
 result db 10,"Resultado:$"
@@ -13,6 +14,7 @@ error_num db 10,"Algo deu errado, tente novamente o numero:$"
 .code
 
 print_msg macro var1
+
     mov ah,09h
     lea dx,var1
     int 21h
@@ -25,7 +27,7 @@ MOV DS,AX              ;seta a data para o registrador DS
 
 start: 
 
-print_msg select_op
+print_msg select_op ;printo a msg pedindo o operador
 
 mov ah,01h ;pegando input do operador
 int 21h
@@ -44,12 +46,12 @@ mov ch,al ;ch vai ser no codigo inteiro somente para definir a operacao
 
 cont:
 
-print_msg num1
+print_msg num1  ;printa msg pedindo numero 1
 
 call pegar_input ;chama a funcao de input
 mov bh,al ;move al para bh
 
-print_msg num2
+print_msg num2 ;printa msg  pedindo numero  2
 
 call pegar_input
 mov bl,al ;o segundo numero vai sempre ficar salvo em bl
@@ -87,7 +89,7 @@ mov ah,4ch ;finaliza o codigo
 int 21h
 
 erro:
-print_msg error
+print_msg error ;printa msg de error  
 jmp start
 
 main endp 
@@ -96,21 +98,27 @@ soma proc
 
     add bh,bl
     mov cl,bh ;o cl vai sempre ser o resultado das operacoes
+
+    js negsoma  ;caso o resultado seja negativo ele vai pular para o negsoma:
     mov bl,"+" ;transformo bl no sinal para ser printado
+
+    negsoma:
+    neg cl
+    mov bl,"-"
     
     ret
 soma endp
 
 menos proc
 
-    sub bh,bl
-    mov cl,bh
+    sub bh,bl ;faz o sub 
+    mov cl,bh ;movo o resultado para CL << registrador padrao de respostas
     js sub_neg_print
-    mov bl,"+"
-    jmp print ;se for positivo vai printar normalmente
+    mov bl,"+"  ;caso o numero NAO SEJA NEGATIVO ele vai printar como positivo
+    ret
 
     sub_neg_print: 
-    neg cl 
+    neg cl ;ele vai pegar o valor do modulo de Cl
     mov bl,"-"  ;transforma o registrador que salva o sinal em negativo para que printe como um numero negativo
     
     ret
@@ -161,7 +169,7 @@ printar proc
     mov ax,cx
     mov ch,10
     div ch ;al = quociente ah = resto
-    
+
     mov cl,al   ;cl se torna cosciente
     mov ch,ah   ;ch se torna resto
 
@@ -185,12 +193,14 @@ printar proc
 printar endp
 
 pegar_input proc
-
+;============================== validacao de input  ========================
 start_numero:
-mov ah,01h  ;mando a funcao de inputs
+mov ah,01h  ;manda a funcao de inputs
 int 21h
 
-;============================= validacao de input ====================== 
+cmp al,"-"  ;compara o valor lido com -, se for, ele vai pular para o jmp isneg
+je isneg
+continue:   ;depois do jmp ele retorna para ca para pegar os inputs
 
 cmp al,30h  ;comparo o resultado com 0,se al ele é mandado pra error 
 jl erro_numero  ;da jmp erro_numero
@@ -199,7 +209,17 @@ jg erro_numero
 
 and al,0fh  ;transformo em decimal
 
+cmp bl,"-"  ;comparo para ver se o sinal é negativo
+jne resultado_positivo   ;ele da jump se for positivo pro ret
+neg al  ;sendo negativo ele nega o numero em seu complemento de 2
+resultado_positivo:
 RET 
+
+isneg: ;caso ele seja um valor negativo ele vai ter seu valor negado
+mov bl,al;manda o input do sinal para bl
+mov ah,01h
+int 21h
+jmp continue
 
 erro_numero:
 print_msg error_num
