@@ -4,8 +4,8 @@ TITLE André Marques - 22001640 // Plínio Zanchetta - 22023003
 .data 
 
 select_op db 10,"Selecione sua operacao: + - / *:$"
-num1 db 10,"Defina o primeiro numero da operacao:$"
-num2 db 10,"Defina o segundo numero da operacao:$"
+num1 db 10,"Defina o primeiro numero da operacao(-99 -> 99):$"
+num2 db 10,"Defina o segundo numero da operacao(-99 -> 99):$"
 result db 10,"Resultado:$"
 error db 10,"Algo deu errado, tente novamente:$"
 error_num db 10,"Algo deu errado, tente novamente o numero:$"
@@ -108,6 +108,7 @@ soma proc   ;ja ta funcionando o menos e o mais
 
     add bh,bl
     mov cl,bh ;o cl vai sempre ser o resultado das operacoes
+    and cl,cl 
 
     js negsoma  ;caso o resultado seja negativo ele vai pular para o negsoma:
     mov bl,"+" ;transformo bl no sinal para ser printado
@@ -185,7 +186,7 @@ divi endp
 printar proc
 
     xor ch,ch ;comecamos a divisao do resultado para que possamos imprimir 2 valores
-    mov ax,cx
+    mov ax,cx ;cl se torna cx
     mov ch,10
     div ch ;al = quociente ah = resto
 
@@ -211,9 +212,8 @@ printar proc
     ret
 printar endp
 
-pegar_input proc ;com possibilidade de pegar inputs negativos e números decmais (ta dando problema, verificar na van)
-
-xor bx,bx   ;zera o valor de bl para que nao tenha nenhuma interferencia externa
+pegar_input proc ;com possibilidade de pegar inputs negativos e números decmais (tanto os valores quanto os sinais estão dando certinho)
+xor bl,bl   ;reseta bl para que o sinal seja mantido neutro
 ;============================== validacao de input  ========================
 start_numero:
 mov ah,01h  ;manda a funcao de inputs
@@ -238,18 +238,18 @@ valid_num   ;valida o numero do input
 
 and al,0fh  ;transforma em decimal o valor lido
 xchg al,cl ;transforma o numero a ser multiplicado em al para que a funcao de multiplicacao realize-a corretamente
-mov bh,10 ;salvando o valor a ser multiplicado em bh para que a funcao seja multiplicada corretamente
-mul bh   ;multiplica o al em 10, para que o numero seja adicionado com o multiplo dele
+mov dh,10 ;salvando o valor a ser multiplicado em dh para que a funcao seja multiplicada corretamente
+mul dh   ;multiplica o al em 10, o resultado é salvo em AX (salvo oficialmentem em AL)
 
 add cl,al ;adiciona o valor de cl em al, para que o numero seja decimal 
 
 unitario:
 mov al,cl ;retornam os valores para seus locais originais
-xor cl,cl ;reseta cl para que em outros momentos do codigo ele seja utilizado
 cmp bl,"-"  ;comparo para ver se o sinal é negativo
 jne resultado_positivo   ;ele da jump se for positivo pro ret
 neg al  ;sendo negativo ele nega o numero em seu complemento de 2
 resultado_positivo:
+xor cl,cl
 RET 
 
 isneg: ;caso ele seja um valor negativo ele vai ter seu valor negado
