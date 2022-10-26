@@ -19,6 +19,14 @@ print_msg macro var1
     int 21h
     endm
 
+valid_num macro 
+
+    cmp al,30h  ;comparo o resultado com 0,se al ele é mandado pra error 
+    jl erro_numero  ;da jmp erro_numero
+    cmp al,39h  ;comparo o resultado com 9, se ele for maior é mandado pra error
+    jg erro_numero
+    endm
+
 main proc 
 
 MOV AX,@DATA           ;inicializa a data, setando ela para o registrador AX
@@ -32,7 +40,7 @@ mov ah,01h ;pegando input do operador
 int 21h
 mov ch,al ;ch vai ser no codigo inteiro somente para definir a operacao
 
-    cmp ch,"+"
+    cmp ch,"+"  ;juntar essa parte do codigo junto com o switch case debaixo 
     jz cont
     cmp ch,"-"
     jz cont       ;verifica os inputs se sao possiveis, se estao erradas ele da erro e fecha o programa
@@ -54,6 +62,8 @@ print_msg num2 ;printa msg  pedindo numero  2
 
 call pegar_input
 mov bl,al ;o segundo numero vai sempre ficar salvo em bl
+
+;=================== chance de melhorar o codigo // fazer igual o ENZO
 
 cmp ch,"+" ;soma deu tudo certo
 jnz not_soma
@@ -84,6 +94,7 @@ call printar ;chama o procedimento de print
 jmp exit
 
 exit:
+jmp start
 mov ah,4ch ;finaliza o codigo
 int 21h
 
@@ -200,9 +211,9 @@ printar proc
     ret
 printar endp
 
-pegar_input proc ;com possibilidade de pegar inputs negativos
+pegar_input proc ;com possibilidade de pegar inputs negativos e números decmais (ta dando problema, verificar na van)
 
-xor bl,bl   ;zera o valor de bl para que nao tenha nenhuma interferencia externa
+xor bx,bx   ;zera o valor de bl para que nao tenha nenhuma interferencia externa
 ;============================== validacao de input  ========================
 start_numero:
 mov ah,01h  ;manda a funcao de inputs
@@ -212,13 +223,29 @@ cmp al,"-"  ;compara o valor lido com -, se for, ele vai pular para o jmp isneg
 je isneg
 continue:   ;depois do jmp ele retorna para ca para pegar os inputs
 
-cmp al,30h  ;comparo o resultado com 0,se al ele é mandado pra error 
-jl erro_numero  ;da jmp erro_numero
-cmp al,39h  ;comparo o resultado com 9, se ele for maior é mandado pra error
-jg erro_numero
+valid_num ;valida o numero do input
 
-and al,0fh  ;transformo em decimal
+and al,0fh  ;transformo em decimal 
+mov cl,al   ;salva o numero lido em cl para que seja feita a multiplicacao depois
 
+mov ah,01h   ;pegando segundo input
+int 21h
+
+cmp al,13 ;comparo se o input lido foi o ENTER, para que possa seguir o algoritmo e receber o input do numero
+je unitario
+
+valid_num   ;valida o numero do input 
+
+and al,0fh  ;transforma em decimal o valor lido
+xchg al,cl ;transforma o numero a ser multiplicado em al para que a funcao de multiplicacao realize-a corretamente
+mov bh,10 ;salvando o valor a ser multiplicado em bh para que a funcao seja multiplicada corretamente
+mul bh   ;multiplica o al em 10, para que o numero seja adicionado com o multiplo dele
+
+add cl,al ;adiciona o valor de cl em al, para que o numero seja decimal 
+
+unitario:
+mov al,cl ;retornam os valores para seus locais originais
+xor cl,cl ;reseta cl para que em outros momentos do codigo ele seja utilizado
 cmp bl,"-"  ;comparo para ver se o sinal é negativo
 jne resultado_positivo   ;ele da jump se for positivo pro ret
 neg al  ;sendo negativo ele nega o numero em seu complemento de 2
@@ -240,14 +267,14 @@ pegar_input endp
 sinalizacao proc    ;arruma a sinalizacao para procedimentos que nao possam ser feitos em complemento de 2 (mult e div)
 
     ;======== verifica o sinal da multiplicacao =========
+    xor dh,dh
+    xor dl,dl
 
-    mov dl,0    ;zera o contador dl
-    
     and bh,bh ;verifica as flags relacionadas a bh
     js neg_bh   ;da o jmp se bh for negativo
     jns pos_bh  ;da jmp se bh for positivo 
     neg_bh:
-    inc dl  ;aumenta o contador dl
+    mov dh,1  ;adiciona um em dh
     neg bh ;pega o modulo de bh
 
     pos_bh: ;se bh for positivo ele pula diretamente pra ca
@@ -255,17 +282,14 @@ sinalizacao proc    ;arruma a sinalizacao para procedimentos que nao possam ser 
     js neg_bl   ;pula se bl for negativo
     jns pos_bl  ;sai da parte do sinal se for positivo
     neg_bl:
-    inc dl  ;aumenta o dl
+    mov dl,1  ;adiciona um em dl
     neg bl  ;pega o modulo de bl
 
     pos_bl:
 
-    cmp dl,0    ;compara o contador dl com 0, ou seja, se ele for 2 numeros postivos
-    je ch_pos   ;printa o sinal positivo
-    cmp dl,2    ;compara o dl com 2, ou seja, se forem 2 valores negativos, 
-    je ch_pos   ;printa o sinal positivo
-    cmp dl,1    ;compara o dl com 1, ou seja, se for 1 valor negativos 
-    je ch_neg   ;printa o sinal negativo
+    xor dl,dh ;verifico se haverá sinalizacao negativa
+    jz ch_pos   
+    jnz ch_neg
     jmp erro
 
     ch_pos:
