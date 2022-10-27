@@ -4,8 +4,8 @@ TITLE André Marques - 22001640 // Plínio Zanchetta - 22023003
 .data 
 
 select_op db 10,"Selecione sua operacao: + - / *:$"
-num1 db 10,"Defina o primeiro numero da operacao(-99 -> 99):$"
-num2 db 10,"Defina o segundo numero da operacao(-99 -> 99):$"
+num1 db 10,"Defina o primeiro numero da operacao:$"
+num2 db 10,"Defina o segundo numero da operacao:$"
 result db 10,"Resultado:$"
 error db 10,"Algo deu errado, tente novamente:$"
 error_num db 10,"Algo deu errado, tente novamente o numero:$"
