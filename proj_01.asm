@@ -41,7 +41,7 @@ int 21h
 mov ch,al ;ch vai ser no codigo inteiro somente para definir a operacao
 
     cmp ch,"+"  ;juntar essa parte do codigo junto com o switch case debaixo 
-    jz cont
+    jz cont 
     cmp ch,"-"
     jz cont       ;verifica os inputs se sao possiveis, se estao erradas ele da erro e fecha o programa
     cmp ch,"/"
@@ -86,7 +86,6 @@ not_mult: ;como se fosse um switch case, vai testando todos até que encontra o 
 cmp ch,"/"
 jnz not_divi
 call divi   ;chama o procedimenot de divisao
-jmp print
 not_divi:
 
 print:
@@ -176,9 +175,72 @@ ret
 mult endp
 
 divi proc
-        ;colocar as funcoes de divisao 
-        ;bh / bl
-        ;loop de bh sub bl enquanto bh for maior ou igual a 0 e toda vez no loop faz inc do resultado 
+        
+        call sinalizacao ;primeiro ele ta vendo qual vai ser o sinal do resultado
+        ;sinalizacao é salva em dh (portanto nao usar dh no codigo)
+
+        xor dl,dl ;reseta dl que foi utilizado na sinalizacao
+
+        ;bh é o dividendo
+        ;bl é o divisor
+        ;ch e cl sao os digitos uteis de bh e bl
+        ;dl é a resposta 
+
+        mov cl,bh ;mandando bh pra cl pra ver a quantidade de digitos uteis
+        call dig_uteis ;vai retornar em cl o valor dos numeros uteis de bh
+        mov ch,cl   ;mandando digitos uteis de bh para ch
+
+        mov cl,bl   ;pega o valor dos digitos uteis de bl
+        call dig_uteis  ;retorna cl
+        ;como cl já é o registrador dos uteis de bl eu vou mandar como ta
+
+        mov dl,ch ;salva o valor de ch em dl para que seja retornado
+
+        sub ch,cl ;pega o valor de quantas vezes precisa deslocar pra esquerda pra ficar o maximo
+        xchg ch,cl ;o valor de quantas vezes é deslocado é mandado pra cl
+        shl bl,cl ;faz o shift da quantidade de vezes que é necessário
+        xchg ch,cl ;e depois é voltado pra ch e cl se mantem normal
+
+        mov ch,dl ;manda dl para ch parq que o volte o valor normal de ch
+
+        xor dl,dl ;reseta dl para que seja usado como contador
+
+        comeca_divi:
+        cmp bh,bl ;se o valor for negativo, significa que ele tem que ser jogado para a direita uma vez
+        js blmaiorbh ;se for maior vai pular para isso
+
+        sub bh,bl ;retira bl de bh pela primeira vez
+        shr bl,1 ;joga o divisor para a direita para a proxima sub
+        dec ch ;diminui uma unidade de ch (ele ja fez UM dos digitos uteis) 
+        shl dl,1 ;ele joga o resultado para direita para adicionar um valor
+        or dl,1 ;adiciona um bit 1 para o resultado (pois bl NAO era maior que bh)
+        cmp cl,ch ;compara o valor de cl com ch para ver se ja chegou na ultima subtracao
+        jns comeca_divi ;se for positivo ou 0, ele volta, caso contrario ele para
+        js fora ;senao ele vai pra fora
+
+        blmaiorbh: ;caso o valor for negativo ele vai vir pra ca, ou seja, vai ter um 0 nesse bit da resposta
+        shr bl,1 ;desloca o divisor pra direita
+        dec ch ;faz decrease de ch
+        shl dl,1 ;faz o deslocamento da reposta para a esquerda
+        or dl,0 ;adiciona o bit desse loop como 0 
+        cmp cl,ch ;novamente compara se o valor de cl com ch para saber se ele vai voltar ou sair
+        jns comeca_divi
+        js fora
+
+    fora:
+    ;nessa situacao bh se torna o resto enquanto o quosciente é dl, nessa situacao deverá ter alguma maneira de repetir o processo com o resto
+    ;a menor multiplicacao possivel é 99/9, portanto o sistema de print DO QUOCIENTE ja funciona, agora é necessário um sistema de pritnar 
+    ;para printar as virgulas.
+    ;nesse caso vamos fazer o call de printar aqui mesmo na funcao e nao pela main.
+    ;queremos printar 2 numeros apos a virgula, portanto vamos pegar o resto x 10 e dividir novamente
+
+
+    ;dl = resultado
+    ;dh = sinal
+    ;bh = resto
+
+    mov cl,dl ;manda o valor de dl para cl para chamar a funcao de print
+    mov bl,dh ;manda o valor do sinal
 
     ret
 divi endp
@@ -301,5 +363,26 @@ sinalizacao proc    ;arruma a sinalizacao para procedimentos que nao possam ser 
     ret ;retorna pro procedimento que esta sendo schamado
 
 sinalizacao endp
+
+dig_uteis proc  ;recebe um valor e pega a quantidade de digitos uteis dele (00001010 = 4 digitos uteis)
+;recebe cl como seu digito util
+;retorna o valor de digitos uteis em cl
+
+    mov ah,8 ;ah se torna o contador que sera decrementado para que saibamos a quantidade de digitos uteis
+
+    recontar:
+    rol cl,1 ;rotaciona cl para esquerda para checar sua quantidade de digitos uteis
+    dec ah  ;decrementa um de ah toda vez que o loop rodar. até que ache o primeiro valor de 1
+    jc carry_inicial    ; é 1? vai sair entao
+    cmp ah,0    ;nao é 1 mas o valor de ah virou 0? (numero inutil)
+    jne recontar    ;ele sai tbm
+    ret ;retorna se o numero de ah for 0
+
+    carry_inicial:
+    inc ah ;o codigo faz um decrease a mais que deve ser compensado aqui
+    mov cl,ah   ;manda o valor de ah para cl ser retornado
+    ret ;retorna o valor de digitos uteis para cl
+
+dig_uteis endp
 
 end main 
