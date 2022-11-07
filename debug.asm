@@ -32,8 +32,7 @@ main proc
 MOV AX,@DATA           ;inicializa a data, setando ela para o registrador AX
 MOV DS,AX              ;seta a data para o registrador DS
 
-
-        mov bh,10
+        mov bh,50
         mov bl,2
 
         call sinalizacao ;primeiro ele ta vendo qual vai ser o sinal do resultado
@@ -74,7 +73,7 @@ MOV DS,AX              ;seta a data para o registrador DS
         dec ch ;diminui uma unidade de ch (ele ja fez UM dos digitos uteis) 
         shl dl,1 ;ele joga o resultado para direita para adicionar um valor
         or dl,1 ;adiciona um bit 1 para o resultado (pois bl NAO era maior que bh)
-        cmp cl,ch ;compara o valor de cl com ch para ver se ja chegou na ultima subtracao
+        cmp ch,cl ;compara o valor de cl com ch para ver se ja chegou na ultima subtracao
         jns comeca_divi ;se for positivo ou 0, ele volta, caso contrario ele para
         js fora ;senao ele vai pra fora
 
@@ -83,7 +82,7 @@ MOV DS,AX              ;seta a data para o registrador DS
         dec ch ;faz decrease de ch
         shl dl,1 ;faz o deslocamento da reposta para a esquerda
         or dl,0 ;adiciona o bit desse loop como 0 
-        cmp cl,ch ;novamente compara se o valor de cl com ch para saber se ele vai voltar ou sair
+        cmp ch,cl ;novamente compara se o valor de cl com ch para saber se ele vai voltar ou sair
         jns comeca_divi
         js fora
 
@@ -104,7 +103,11 @@ MOV DS,AX              ;seta a data para o registrador DS
 
     call printar
 
+    mov ah,4ch
+    int 21h
+
     main endp
+
     dig_uteis proc  ;recebe um valor e pega a quantidade de digitos uteis dele (00001010 = 4 digitos uteis)
 ;recebe cl como seu digito util
 ;retorna o valor de digitos uteis em cl
@@ -125,44 +128,45 @@ MOV DS,AX              ;seta a data para o registrador DS
     ret ;retorna o valor de digitos uteis para cl
 
 dig_uteis endp
-sinalizacao proc    ;arruma a sinalizacao para procedimentos que nao possam ser feitos em complemento de 2 (mult e div)
+    sinalizacao proc    ;arruma a sinalizacao para procedimentos que nao possam ser feitos em complemento de 2 (mult e div)
 
-    ;======== verifica o sinal da multiplicacao =========
-    xor dh,dh
-    xor dl,dl
+        ;======== verifica o sinal da multiplicacao =========
+        xor dh,dh
+        xor dl,dl
 
-    and bh,bh ;verifica as flags relacionadas a bh
-    js neg_bh   ;da o jmp se bh for negativo
-    jns pos_bh  ;da jmp se bh for positivo 
-    neg_bh:
-    mov dh,1  ;adiciona um em dh
-    neg bh ;pega o modulo de bh
+        and bh,bh ;verifica as flags relacionadas a bh
+        js neg_bh   ;da o jmp se bh for negativo
+        jns pos_bh  ;da jmp se bh for positivo 
+        neg_bh:
+        mov dh,1  ;adiciona um em dh
+        neg bh ;pega o modulo de bh
 
-    pos_bh: ;se bh for positivo ele pula diretamente pra ca
-    and bl,bl   ;verifica as flags relacionadas a bl
-    js neg_bl   ;pula se bl for negativo
-    jns pos_bl  ;sai da parte do sinal se for positivo
-    neg_bl:
-    mov dl,1  ;adiciona um em dl
-    neg bl  ;pega o modulo de bl
+        pos_bh: ;se bh for positivo ele pula diretamente pra ca
+        and bl,bl   ;verifica as flags relacionadas a bl
+        js neg_bl   ;pula se bl for negativo
+        jns pos_bl  ;sai da parte do sinal se for positivo
+        neg_bl:
+        mov dl,1  ;adiciona um em dl
+        neg bl  ;pega o modulo de bl
 
-    pos_bl:
+        pos_bl:
 
-    xor dl,dh ;verifico se haverá sinalizacao negativa
-    jz ch_pos   
-    jnz ch_neg
+        xor dl,dh ;verifico se haverá sinalizacao negativa
+        jz ch_pos   
+        jnz ch_neg
 
 
-    ch_pos:
-    mov dh,"+"  ;move o sinal positivo para o dh que será printado
-    ret ;retorna pro procedimento que esta sendo chamado
+        ch_pos:
+        mov dh,"+"  ;move o sinal positivo para o dh que será printado
+        ret ;retorna pro procedimento que esta sendo chamado
 
-    ch_neg:
-    mov dh,"-"  ;move o sinal negativo que sera printado de dh
-    ret ;retorna pro procedimento que esta sendo schamado
+        ch_neg:
+        mov dh,"-"  ;move o sinal negativo que sera printado de dh
+        ret ;retorna pro procedimento que esta sendo schamado
 
-sinalizacao endp
-printar proc
+    sinalizacao endp
+    printar proc
+
 
     xor ch,ch ;comecamos a divisao do resultado para que possamos imprimir 2 valores
     mov ax,cx ;cl se torna cx
@@ -190,4 +194,5 @@ printar proc
     
     ret
 printar endp
+   
     end main

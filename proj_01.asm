@@ -86,6 +86,9 @@ not_mult: ;como se fosse um switch case, vai testando todos até que encontra o 
 cmp ch,"/"
 jnz not_divi
 call divi   ;chama o procedimenot de divisao
+call printar    ;printa o sinal e printa e o modulo
+call printar_virg   ;printa a virgula e os 2 decimais apois a virgula
+jmp exit
 not_divi:
 
 print:
@@ -93,7 +96,6 @@ call printar ;chama o procedimento de print
 jmp exit
 
 exit:
-jmp start
 mov ah,4ch ;finaliza o codigo
 int 21h
 
@@ -179,6 +181,10 @@ divi proc
         call sinalizacao ;primeiro ele ta vendo qual vai ser o sinal do resultado
         ;sinalizacao é salva em dh (portanto nao usar dh no codigo)
 
+        mov al,bl ;mando o divisor pra bl para que seja utilizado futuramente
+        xor ah,ah   ;esvazio ah
+        push ax ;salvo na pilha o valor de al
+
         xor dl,dl ;reseta dl que foi utilizado na sinalizacao
 
         ;bh é o dividendo
@@ -214,7 +220,7 @@ divi proc
         dec ch ;diminui uma unidade de ch (ele ja fez UM dos digitos uteis) 
         shl dl,1 ;ele joga o resultado para direita para adicionar um valor
         or dl,1 ;adiciona um bit 1 para o resultado (pois bl NAO era maior que bh)
-        cmp cl,ch ;compara o valor de cl com ch para ver se ja chegou na ultima subtracao
+        cmp ch,cl ;compara o valor de cl com ch para ver se ja chegou na ultima subtracao
         jns comeca_divi ;se for positivo ou 0, ele volta, caso contrario ele para
         js fora ;senao ele vai pra fora
 
@@ -223,7 +229,7 @@ divi proc
         dec ch ;faz decrease de ch
         shl dl,1 ;faz o deslocamento da reposta para a esquerda
         or dl,0 ;adiciona o bit desse loop como 0 
-        cmp cl,ch ;novamente compara se o valor de cl com ch para saber se ele vai voltar ou sair
+        cmp ch,cl ;novamente compara se o valor de cl com ch para saber se ele vai voltar ou sair
         jns comeca_divi
         js fora
 
@@ -245,7 +251,7 @@ divi proc
     ret
 divi endp
 
-printar proc
+printar proc ;nao usa bh portanto posso usar na printar_virg
 
     xor ch,ch ;comecamos a divisao do resultado para que possamos imprimir 2 valores
     mov ax,cx ;cl se torna cx
@@ -273,6 +279,44 @@ printar proc
     
     ret
 printar endp
+
+printar_virg proc
+
+    ;ele vai pegar o resto da divisao que esta salvo em bh, multiplicar por 10 e dividir novamente pelo divisor (pode usar o div? vou arriscar ein kk)
+    ;resto salvo em bh, mult 10 e div por bh (divisor)
+
+    mov ah,02h
+    mov dl,","
+    int 21h ;print o valor da virgula primeiro
+
+    pop ax ;pego o valor de bh que esta salvo em al
+    xchg al,bh ;mando bh para al para que seja multiplicado e bh se tornara o divisor
+    mov cl,2 ;quantidade de numeros decimais estarao sendo printados
+
+    start_mul:
+    mov ch,10 ;mando 10 para ch 
+    mul ch ;multiplico al por 10, o resultado é salvo em al
+
+    ;portanto o resto multiplicado por 10 ta salvo em al
+    ;agr divido ele por bh
+
+    xor ah,ah ;reseta ah para q al seja ax, necessario na div
+
+    div bh ;divido al por bh e o resultado é salvo em al e o resto em ah
+    mov dl,al ;mando o quociente para dl
+    mov dh,ah ;mando o resto para dh
+
+    mov ah,02h
+    int 21h ;print o valor salvo em dl
+    dec cl ;decrementa cl
+    cmp cl,0 ;caso seja seja 0 ele sai, caso nao ele continua printando
+    je out_print
+    mov al,dh ;manda o resto para al
+    jmp start_mul
+
+    out_print:
+    ret
+printar_virg endp
 
 pegar_input proc ;com possibilidade de pegar inputs negativos e números decmais (tanto os valores quanto os sinais estão dando certinho)
 xor bl,bl   ;reseta bl para que o sinal seja mantido neutro
