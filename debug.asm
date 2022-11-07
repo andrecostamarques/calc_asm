@@ -32,7 +32,7 @@ main proc
 MOV AX,@DATA           ;inicializa a data, setando ela para o registrador AX
 MOV DS,AX              ;seta a data para o registrador DS
 
-        mov bh,50
+        mov bh,5
         mov bl,2
 
         call sinalizacao ;primeiro ele ta vendo qual vai ser o sinal do resultado
@@ -196,3 +196,41 @@ dig_uteis endp
 printar endp
    
     end main
+
+    printar_virg proc
+
+    ;ele vai pegar o resto da divisao que esta salvo em bh, multiplicar por 10 e dividir novamente pelo divisor (pode usar o div? vou arriscar ein kk)
+    ;resto salvo em bh, mult 10 e div por bh (divisor)
+
+    mov ah,02h
+    mov dl,","
+    int 21h ;print o valor da virgula primeiro
+
+    pop ax ;pego o valor de bh que esta salvo em al
+    xchg al,bh ;mando bh para al para que seja multiplicado e bh se tornara o divisor
+    mov cl,2 ;quantidade de numeros decimais estarao sendo printados
+
+    start_mul:
+    mov ch,10 ;mando 10 para ch 
+    mul ch ;multiplico al por 10, o resultado é salvo em al
+
+    ;portanto o resto multiplicado por 10 ta salvo em al
+    ;agr divido ele por bh
+
+    xor ah,ah ;reseta ah para q al seja ax, necessario na div
+
+    div bh ;divido al por bh e o resultado é salvo em al e o resto em ah
+    mov dl,al ;mando o quociente para dl
+    mov dh,ah ;mando o resto para dh
+
+    mov ah,02h
+    int 21h ;print o valor salvo em dl
+    dec cl ;decrementa cl
+    cmp cl,0 ;caso seja seja 0 ele sai, caso nao ele continua printando
+    je out_print
+    mov al,dh ;manda o resto para al
+    jmp start_mul
+
+    out_print:
+    ret
+printar_virg endp
