@@ -1,8 +1,16 @@
 TITLE André Marques - 22001640 
+; Consideracoes iniciais:
+; infelizmente pelas ultimas semanas terem sido mais conturbadas que normalmente nao pude fazer o trabalho que me planejei e me orgulharia
+; todavia ainda consegui adicionar algumas funcionalidades adicionais, mas ainda faltando das em meu planejamento e que ja havia comecado
+; no codigo.
+; planejo apos a data de entrega fazer mudancas no codigo para deixa-lo mais eficiente e com todas as funcionalidades que eu previa
+; pois acho que acabou se saindo muito pouco eficiente e há um espaco grande para melhorias.
+
 .model small
 .stack 100h
 .data 
 
+start1 db 10,"Bem vindo! Inputs: -99 a 99 || Outputs: -127 a 127.$"
 select_op db 10,"Selecione sua operacao: + - / *:$"
 num1 db 10,"Defina o primeiro numero da operacao:$"
 num2 db 10,"Defina o segundo numero da operacao:$"
@@ -10,17 +18,18 @@ result db 10,"Resultado:$"
 error db 10,"Algo deu errado, tente novamente:$"
 error_num db 10,"Algo deu errado, tente novamente o numero:$"
 error_zero db 10,"Divisao por zero, impossivel.$"
+divisor db "?$" ;evitei ao maximo fazer isso mas infelizmente foi necessario 
 
 .code
 
-print_msg macro var1
+print_msg macro var1 ;macro que funciona para printar mensagens
 
     mov ah,09h
     lea dx,var1
     int 21h
     endm
 
-valid_num macro 
+valid_num macro ;serve para validar um numero 
 
     cmp al,30h  ;comparo o resultado com 0,se al ele é mandado pra error 
     jl erro_numero  ;da jmp erro_numero
@@ -32,6 +41,10 @@ main proc
 
 MOV AX,@DATA           ;inicializa a data, setando ela para o registrador AX
 MOV DS,AX              ;seta a data para o registrador DS
+
+
+
+print_msg start1
 
 start: 
 
@@ -45,7 +58,7 @@ mov ch,al ;ch vai ser no codigo inteiro somente para definir a operacao
     jz cont 
     cmp ch,"-"
     jz cont       ;verifica os inputs se sao possiveis, se estao erradas ele da erro e fecha o programa
-    cmp ch,"/"
+    cmp ch,"/"      ;na refatoracao integrar com o proximo passo
     jz cont
     cmp ch,"*"
     jz cont
@@ -63,6 +76,7 @@ print_msg num2 ;printa msg  pedindo numero  2
 
 call pegar_input
 mov bl,al ;o segundo numero vai sempre ficar salvo em bl
+mov divisor,bl ;manda bl para divisor << tentei evitar ao maximo pra nao ficar confuso mas nao consegui 
 
 ;=================== chance de melhorar o codigo // fazer igual o ENZO
 
@@ -107,6 +121,10 @@ jmp start
 main endp 
 
 soma proc   ;ja ta funcionando o menos e o mais
+    ;realiza a soma 
+    ;recebe como inputs bh e bl (nessa ordem)
+    ;retorna o produto em cl
+    ;retorna o sinal em bl
 
     add bh,bl
     mov cl,bh ;o cl vai sempre ser o resultado das operacoes
@@ -124,6 +142,10 @@ soma proc   ;ja ta funcionando o menos e o mais
 soma endp
 
 menos proc  ;ja ta funcionando o menos e o mais
+    ;realiza a subtracao 
+    ;recebe como inputs bh e bl (nessa ordem)
+    ;retorna o produto em cl
+    ;retorna o sinal em bl
 
     sub bh,bl ;faz o sub 
     mov cl,bh ;movo o resultado para CL << registrador padrao de respostas
@@ -139,6 +161,14 @@ menos proc  ;ja ta funcionando o menos e o mais
 menos endp
 
 mult proc ;funcionando com os valores positivos e negativos na multiplicacao >> sinal e magnitude e nao complemento de 2
+    ;realiza a multiplicacao 
+    ;recebe como inputs bh e bl (nessa ordem)
+    ;retorna o produto em cl
+    ;retorna o sinal em dh (que apos é transofrmado em bl)
+    ;utiliza a funcao de sinalizacao para receber o valor do sinal
+    ;seu algoritmo principal é realizar a soma do multiplicando caso o bit do multiplicador seja 1
+    ;e ir realizando o deslocamento assim que necessário 
+
 
 ;========= vai verificar a sinalizacao da multiplicacao =====
 
@@ -178,6 +208,14 @@ ret
 mult endp
 
 divi proc
+    ;realiza a divisao 
+    ;recebe como inputs bh e bl (nessa ordem)
+    ;retorna o produto em cl
+    ;retorna o sinal em dh (que apos é transofrmado em bl)
+    ;utiliza a funcao de sinalizacao para receber o valor do sinal
+    ;seu algoritmo principal é realizar a subtracao do divdendo pelo divisor 1
+    ;e ir realizando o deslocamento assim que necessário 
+
         
         call sinalizacao ;primeiro ele ta vendo qual vai ser o sinal do resultado
         ;sinalizacao é salva em dh (portanto nao usar dh no codigo)
@@ -261,12 +299,15 @@ divi proc
 divi endp
 
 printar proc ;nao usa bh portanto posso usar na printar_virg
+    ;essa é a funcao para print do numeros antes da virgula
+    ;ela recebe os valores de cl para numero e bl como sinal
+    ;todos os numeros sao enviados como numerais ent sao traduzidos para char
+    ;e feito as divisoes para imprimir os numeros em suas casas decimais
 
-    push ax ;salva o valor de ah (divisor)
 
     xor ch,ch ;comecamos a divisao do resultado para que possamos imprimir 2 valores
     mov ax,cx ;cl se torna cx
-    mov ch,10
+    mov ch,100
     div ch ;al = quociente ah = resto
 
     mov cl,al   ;cl se torna quociente
@@ -283,28 +324,60 @@ printar proc ;nao usa bh portanto posso usar na printar_virg
     mov dl,cl ;printa o resultado
     int 21h
 
-    mov ah,02h ;printa o modulo do resto do numero
-    or ch,30h ;transforma o numeral em char
-    mov dl,ch ;printa o resultado
-    int 21h
+    mov cl,ch ;mando o resto para cl para ser printado de novo
+    xor ch,ch ;comecamos a divisao do resultado para que possamos imprimir 2 valores
+    mov ax,cx ;cl se torna cx
+    mov ch,10
+    div ch ;al = quociente ah = resto
 
-    pop ax; retorna o valor de ah (divisor)
-    
+    mov cl,al   ;cl se torna quociente
+    mov ch,ah   ;ch se torna resto
+
+    mov ah,02h ;printa o modulo do cosciente do numero
+    or cl,30h ;transforma o numeral em char
+    mov dl,cl ;printa o resultado
+    int 21h ;printa o modulo decimal
+
+    or ch,30h ;transformo o resto em char
+    mov dl,ch ;mando para printar
+    mov ah,02h
+    int 21h ;printo
     ret
 printar endp
 
 printar_virg proc
+    ;essa é a funcao para printar os numeros apos a virugla
+    ;ela é utilizada somente para a divisao, por isso seus inputs sao especifiso porem ainda
+    ;sao citados abaixo.
+    ;ela recebe o resto principal da divisao, multiplica por 10 e refaz a divisao para que seja printada as casas deciamsi
 
     ;bh = resto
     ;bl = divisor
     ;vai fazer bh * 10 e depois dividir pelo divisor, pegar o resto e fazer a mesma coisa
+    
+    mov bl,divisor ;recebe o valor do divisor para bl 
 
     mov ah,02h
-    mov dl,","
+    mov dl,"."
     int 21h ;print o valor da virgula primeiro
     
-    mov bl,ah ;manda o valor de ah (divisor) para bl
-    xor ah,ah ;reseta o valor de ah
+    mov al,bh ;mando bh para al para q seja multiplicado
+    mov ch,10 ;mando 10 para ch 
+    mul ch ;multiplico al por 10, o resultado é salvo em al
+
+    ;portanto o resto multiplicado por 10 ta salvo em al
+    ;agr divido ele por bh
+
+    xor ah,ah ;reseta ah para q al seja ax, necessario na div
+
+    div bl ;divido al por bl(divisor) e o resultado é salvo em al e o resto em ah
+
+    or al,30h ;transformo em char
+    mov dl,al ;mando o quociente para dl
+    mov bh,ah ;mando o resto para bh ser pritnado 
+
+    mov ah,02h
+    int 21h ;print o valor salvo em dl (o primeiro decimal)
 
     mov al,bh ;mando bh para al para q seja multiplicado
     mov ch,10 ;mando 10 para ch 
@@ -320,15 +393,20 @@ printar_virg proc
     or al,30h ;transformo em char
     mov dl,al ;mando o quociente para dl
 
-    mov ah,02h
-    int 21h ;print o valor salvo em dl (o primeiro decimal)
+    mov ah,02h  ;printo o segundo decimal
+    int 21h
 
-    mov bh,ah ;mando o resto para bh
+
     ret
 
 printar_virg endp
 
 pegar_input proc ;com possibilidade de pegar inputs negativos e números decmais (tanto os valores quanto os sinais estão dando certinho)
+    ;essa funcao é uma das quais mais facilitas
+    ;ela nao tem input e somente retorna output, em al
+    ;ela recebe o sinal dos numeros nas contas de soma e subtracao (os unicos q necessitam q sejam complemento de 2
+    ;realiza a negacao dos numeros caso necessario e recebe o input de numeros com 2 casas decimais, multiplicando os se necessario
+
 xor bl,bl   ;reseta bl para que o sinal seja mantido neutro
 ;============================== validacao de input  ========================
 start_numero:
@@ -381,6 +459,11 @@ jmp start_numero    ;reinicia
 pegar_input endp 
 
 sinalizacao proc    ;arruma a sinalizacao para procedimentos que nao possam ser feitos em complemento de 2 (mult e div)
+    ;assim como citado acima, multiplicacao e divisao nao é por complemento de 2, porntanto para casos sinalizados
+    ;é necessário um algoritmo diferente para mostrar seus sinais, por conta disso essa funcao nao tem input, ela verifica na hora
+    ;os valores dos numeros e retorna o sinal do resultado por meio de dh
+
+
 
     ;======== verifica o sinal da multiplicacao =========
     xor dh,dh
@@ -419,6 +502,8 @@ sinalizacao proc    ;arruma a sinalizacao para procedimentos que nao possam ser 
 sinalizacao endp
 
 dig_uteis proc  ;recebe um valor e pega a quantidade de digitos uteis dele (00001010 = 4 digitos uteis)
+;essa funcao so é necessário para a divisao, todavia achei interessante e util para proximas funcionliades
+;ela recebe um numero decimal e retorna a quantidade de "digitos uteis" em binários, ignorando os zeros a esquerda
 ;recebe cl como seu digito util
 ;retorna o valor de digitos uteis em cl
 
