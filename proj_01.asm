@@ -76,7 +76,6 @@ print_msg num2 ;printa msg  pedindo numero  2
 
 call pegar_input
 mov bl,al ;o segundo numero vai sempre ficar salvo em bl
-mov divisor,bl ;manda bl para divisor << tentei evitar ao maximo pra nao ficar confuso mas nao consegui 
 
 ;=================== chance de melhorar o codigo // fazer igual o ENZO
 
@@ -221,7 +220,7 @@ divi proc
         ;sinalizacao é salva em dh (portanto nao usar dh no codigo)
 
         xor dl,dl ;reseta dl que foi utilizado na sinalizacao
-        mov ah,bl ;manda bl para ah
+        mov divisor,bl ;manda bl para divisor << tentei evitar ao maximo pra nao ficar confuso mas nao consegui 
 
         ;bh é o dividendo
         ;bl é o divisor
